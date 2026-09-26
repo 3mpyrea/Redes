@@ -1,16 +1,22 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CardView : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    Image _cardBackground;
+    [SerializeField] public CardViewData _cardData;
+
+    private void Awake()
     {
-        
+        _cardBackground = GetComponent<Image>();
+
+        var presenter = GetComponentInParent<CardViewData.IProvider>();
+        presenter.onCardUpdate += CreateIcon;
     }
 
-    // Update is called once per frame
-    void Update()
+    void CreateIcon(CardViewData data)
     {
-        
+        _cardBackground.sprite = data._background;
+        _cardData = data;
     }
 }

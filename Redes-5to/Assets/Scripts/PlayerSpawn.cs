@@ -2,6 +2,7 @@ using Fusion;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PlayerSpawn : SimulationBehaviour, IPlayerJoined
@@ -17,7 +18,10 @@ public class PlayerSpawn : SimulationBehaviour, IPlayerJoined
             var spawnPoint = SetLocalView();
 
             Runner.Spawn(_playerPrefab, spawnPoint.position, spawnPoint.rotation);
-
+            if (Runner.ActivePlayers.Count() == 2)
+            {
+                DeckHandler.instance.InitiateDeck();
+            }
         }
     }
 
