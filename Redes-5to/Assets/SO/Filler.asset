@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 144b83f5423c4c845a57d038c48531df, type: 3}
+  m_Name: Filler
+  m_EditorClassIdentifier: 
+  <_description>k__BackingField: 
+  <_background>k__BackingField: {fileID: 21300000, guid: 8333c35e1e700244390fc294475435b7, type: 3}
+  <_backFace>k__BackingField: {fileID: 21300000, guid: 80945156201f14b48bc91d2f03705f59, type: 3}
+  cardID: 3
+  <_playRef>k__BackingField: {fileID: 11400000, guid: 7c26d074a4f3fd44aa551796565176d4, type: 2}

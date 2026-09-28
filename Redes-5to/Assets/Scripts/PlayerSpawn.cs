@@ -18,40 +18,22 @@ public class PlayerSpawn : SimulationBehaviour, IPlayerJoined
             var spawnPoint = SetLocalView();
 
             Runner.Spawn(_playerPrefab, spawnPoint.position, spawnPoint.rotation);
-            if (Runner.ActivePlayers.Count() == 2)
-            {
-                DeckHandler.instance.InitiateDeck();
-            }
+            
+
+
+        }
+        if (Runner.ActivePlayers.Count() == 2 && Runner.IsSharedModeMasterClient)
+        {
+            DeckHandler.instance.InitiateDeck(Runner);
         }
     }
 
     private Transform SetLocalView()
     {
-      
-        int miIdDeRed = Runner.LocalPlayer.PlayerId;
+        GameManager.instance.localPoint = _spawnPoint[0];
+        GameManager.instance.enemyPoint = _spawnPoint[1];
 
-        Debug.Log($"Mi ID de red real es: {miIdDeRed}");
-
-      
-        foreach (var player in Runner.ActivePlayers)
-        {
-            
-
-            if (player == Runner.LocalPlayer)
-            {
-
-              return _spawnPoint[0];
-                
-            }
-            else
-            {
-
-                return _spawnPoint[1];
-
-            }
-        }
-
-        return null;
+        return _spawnPoint[0];
     }
 }
 

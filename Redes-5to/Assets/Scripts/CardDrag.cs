@@ -1,89 +1,122 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
-using DG.Tweening;
-using TMPro;
 
 public class CardDrag : MonoBehaviour
 {
-    public RectTransform rectTransform;
-
-    public Vector2 originalPos;
-    public Vector3 originalSize;
-
-    bool zoomed;
-    private void Start()
+    public enum CardLocation
     {
-        rectTransform = GetComponent<RectTransform>();
-        originalSize = rectTransform.localScale;
-
-    }
-    public void StartDrag(PointerEventData eventData)
-    {
-        Vector2 localPoint;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-           (RectTransform)GameManager.instance.canvas.GetComponent<Canvas>().transform,
-            eventData.position,
-            eventData.pressEventCamera,
-            out localPoint);
-
-        originalPos = rectTransform.anchoredPosition; ;
+        InDeck,
+        InHand,
+        InDiscard
     }
 
-    public void EndDrag()
+    private CardPresenter _presenter;
+
+    private void Awake()
     {
-        Debug.Log("ending drag");
-        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-        RaycastHit hit;
-        if (Physics.Raycast(ray, out hit))
-        {
-            Debug.Log("hit: " + hit.transform.gameObject.name);
-            if (hit.collider.gameObject.GetComponent<DiscardPlace>())
-            {
-               // var animalito = hit.collider.gameObject.GetComponent<Animalito>();
-                //if (animalito != null && animalito.IsPlayerAlly)
-                //{
-                //    rectTransform.anchoredPosition = originalPos;   // vuelve a la mano
-                //    return;
-                //}
-                GetComponent<CardView>()._cardData._playRef.Play(gameObject);
-            }
-            else { rectTransform.anchoredPosition = originalPos; }
-        }
+        _presenter = GetComponent<CardPresenter>();
     }
 
-
-    public void Click(RectTransform cardPos)
+    public void OnCardClicked()
     {
-        //RectTransform cardTxtRect = GameManager.instance.descriptTxt.GetComponent<RectTransform>();
-
-        Debug.Log("enter click");
-        if (!zoomed)
+        // Primero verificamos que la carta esté lista en Fusion.
+        if (_presenter == null ||
+            _presenter.Object == null ||
+            !_presenter.Object.IsValid)
         {
-            rectTransform.DOScale(originalSize * 2, 0.2f)
-                    .SetEase(Ease.OutQuad);
-
-
-
-            //cardTxtRect.localPosition = new Vector3(cardPos.localPosition.x, cardPos.localPosition.y + 400, cardPos.localPosition.z);
-           // GameManager.instance.descriptTxt.SetActive(true);
-           // cardTxtRect.localScale = Vector3.zero;
-           // cardTxtRect.DOScale(GameManager.instance.descriptTxtSize, 0.3f).SetEase(Ease.OutQuad);
-           // GameManager.instance.descriptTxt.GetComponentInChildren<TextMeshProUGUI>().text = GetComponent<CardView>()._cardData._description;
-
-            zoomed = true;
+            Debug.LogWarning(
+                "La carta aún no está inicializada en Fusion.",
+                this
+            );
+            return;
         }
-        else if (zoomed)
+
+        // Después comprobamos el turno del jugador local.
+        GameManager game = GameManager.instance;
+
+        if (game == null ||
+            !game.IsPlayersTurn(_presenter.Runner.LocalPlayer))
         {
-            rectTransform.DOScale(originalSize, 0.2f)
-                   .SetEase(Ease.OutQuad);
-
-           // cardTxtRect.DOScale(Vector3.zero, 0.3f).SetEase(Ease.OutQuad);
-            //GameManager.instance.descriptTxt.SetActive(false);
-
-            zoomed = false;
+            Debug.Log("Espera tu turno.");
+            return;
         }
+
+        // Solo llegamos aquí si podemos intentar una acción.
+        switch (_presenter.CurrentLocation)
+        {
+            case CardLocation.InDeck:
+                HandleDeckClick();
+                break;
+
+            case CardLocation.InHand:
+                HandleHandClick();
+                break;
+
+            case CardLocation.InDiscard:
+                break;
+        }
+    }
+    private bool TryGetReadyDeck(out DeckHandler deck)
+    {
+        deck = DeckHandler.instance;
+
+        if (deck == null)
+        {
+            Debug.LogWarning(
+                "No existe una instancia de DeckHandler.",
+                this
+            );
+            return false;
+        }
+
+        bool hasObject = deck.Object != null;
+        bool isValid = hasObject && deck.Object.IsValid;
+
+        Debug.Log(
+            $"DeckHandler usado al hacer clic: {deck.GetInstanceID()} | " +
+            $"Tiene Object: {hasObject} | " +
+            $"Es válido: {isValid}",
+            deck
+        );
+
+        if (!isValid)
+        {
+            Debug.LogWarning(
+                "El mazo aún no está listo en Fusion.",
+                deck
+            );
+            return false;
+        }
+
+        // Detecta también una referencia a otro runner.
+        if (deck.Runner != _presenter.Runner)
+        {
+            Debug.LogWarning(
+                "La carta y DeckHandler pertenecen a runners diferentes.",
+                deck
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    private void HandleDeckClick()
+    {
+        if (!TryGetReadyDeck(out DeckHandler deck))
+            return;
+
+        // Las cartas del mazo no tienen propietario.
+        deck.RPC_RequestDraw();
+    }
+
+    private void HandleHandClick()
+    {
+        if (_presenter.OwnerRef != _presenter.Runner.LocalPlayer)
+            return;
+
+        if (!TryGetReadyDeck(out DeckHandler deck))
+            return;
+
+        deck.RPC_RequestPlay(_presenter.Object.Id);
     }
 }

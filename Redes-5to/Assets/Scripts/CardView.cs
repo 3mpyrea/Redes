@@ -5,6 +5,8 @@ public class CardView : MonoBehaviour
 {
     Image _cardBackground;
     [SerializeField] public CardViewData _cardData;
+    [SerializeField] private GameObject back;
+
 
     private void Awake()
     {
@@ -18,5 +20,10 @@ public class CardView : MonoBehaviour
     {
         _cardBackground.sprite = data._background;
         _cardData = data;
+    }
+
+    public void SetFaceDown(bool faceDown)
+    {
+        back.SetActive(faceDown);
     }
 }

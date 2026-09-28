@@ -1,8 +1,6 @@
 using UnityEngine;
 
-
-
 public abstract class CardPlaySO : ScriptableObject
 {
-    public abstract void Play(GameObject cardPlayed);
+    public abstract bool Play(CardPresenter card,CardEffectResolver resolver);
 }

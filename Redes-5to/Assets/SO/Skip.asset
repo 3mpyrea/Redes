@@ -14,4 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <_description>k__BackingField: 
   <_background>k__BackingField: {fileID: 21300000, guid: dcaaefa3ea12dc54a8536f785faa8cd1, type: 3}
-  <_playRef>k__BackingField: {fileID: 0}
+  <_backFace>k__BackingField: {fileID: 21300000, guid: 80945156201f14b48bc91d2f03705f59, type: 3}
+  cardID: 2
+  <_playRef>k__BackingField: {fileID: 11400000, guid: 0bf463674e10b654aa50b7a4cb47e45d, type: 2}

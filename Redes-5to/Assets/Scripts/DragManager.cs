@@ -16,33 +16,35 @@ public class DragManager : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     public void OnBeginDrag(PointerEventData eventData)
     {
 
-        _raycastResults.Clear();
+        //_raycastResults.Clear();
 
-        //Debug.Log("start drag");
-        _graphicRaycaster.Raycast(eventData, _raycastResults);
-        if (_raycastResults.Count > 0)
-        {
-            dragObject = _raycastResults[0].gameObject.GetComponent<CardDrag>();
-            dragObject.StartDrag(eventData);
-        }
+        ////Debug.Log("start drag");
+        //_graphicRaycaster.Raycast(eventData, _raycastResults);
+        //if (_raycastResults.Count > 0)
+        //{
+        //    dragObject = _raycastResults[0].gameObject.GetComponent<CardDrag>();
+        //    if (dragObject != null) { dragObject.StartDrag(eventData); } 
+        //}
 
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        // Debug.Log("dragging");
-        if (dragObject != null)
-        {
-            dragObject.transform.position += new Vector3(eventData.delta.x, eventData.delta.y, 0);
-            foreach (Image item in dragObject.transform)
-            { item.color = new Color32(65, 65, 65, 255); }
-        }
+        //// Debug.Log("dragging");
+        //if (dragObject != null)
+        //{
+        //    dragObject.transform.position += new Vector3(eventData.delta.x, eventData.delta.y, 0);
+           
+        //}
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        dragObject.EndDrag();
-        dragObject = null;
+        //if (dragObject != null)
+        //{
+        //    //dragObject.EndDrag();
+        //    dragObject = null;
+        //}
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -52,9 +54,12 @@ public class DragManager : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
         _graphicRaycaster.Raycast(eventData, _raycastResults);
         if (_raycastResults.Count > 0)
         {
-            dragObject = _raycastResults[0].gameObject.GetComponent<CardDrag>();
-            dragObject.Click(dragObject.rectTransform);
-            Debug.Log("drag object found");
+            dragObject = _raycastResults[0].gameObject.GetComponentInParent<CardDrag>();
+            if (dragObject != null)
+            {
+                dragObject.OnCardClicked();
+                Debug.Log("drag object found");
+            }
         }
     }
 }

@@ -1,96 +1,109 @@
-using Fusion;
 using System.Collections.Generic;
-using UnityEngine;
-using System.Collections;
 using DG.Tweening;
+using UnityEngine;
 
 public class HandView : MonoBehaviour
 {
+    [SerializeField] private List<CardView> hand = new List<CardView>();
 
-    [SerializeField] List<CardView> hand = new List<CardView>();
-    public IEnumerator AddToHand(List<CardView> source, int totalCardsToAdd)
+    [Header("Forma del abanico")]
+    [SerializeField] private float separationX ;
+    [SerializeField] private float archHeight ;
+    [SerializeField] private float maxRotation;
+    [SerializeField] private Vector2 center = Vector2.zero;
+
+    [Header("Orientación")]
+    [SerializeField] private bool opponentHand;
+
+    private bool _layoutDirty;
+
+    private void OnEnable()
     {
-        int remainingCards = totalCardsToAdd;
-        if (remainingCards <= 0) yield break;
+        _layoutDirty = true;
+    }
 
-        
-        // Variables de diseño del abanico
-        float separationX = 140f;
-        float archHeight = 45f;
-        float maxRotation = 15f;
-        Vector2 center = new Vector2(0f, -400f);
+    private void OnTransformChildrenChanged()
+    {
+        _layoutDirty = true;
+    }
 
-        int safetyIterator = 0;
-        int maxSafetyLoops = 20;
+    // Conservamos estos métodos para que CardPresenter
+    // pueda seguir utilizándolos sin cambiar sus llamadas.
+    public void AddCardToFan(CardView card)
+    {
+        _layoutDirty = true;
+    }
 
-        while (remainingCards > 0 && safetyIterator < maxSafetyLoops)
+    public void RemoveCardFromFan(CardView card)
+    {
+        _layoutDirty = true;
+    }
+
+    private void LateUpdate()
+    {
+        if (!_layoutDirty)
+            return;
+
+        _layoutDirty = false;
+        RebuildFan();
+    }
+
+    private void RebuildFan()
+    {
+        hand.Clear();
+
+        // La mano se reconstruye desde sus hijos reales.
+        foreach (Transform child in transform)
         {
-            safetyIterator++;
+            CardView view = child.GetComponent<CardView>();
 
-            // 2. VERIFICACIÓN DE SEGURIDAD DE LA CARTA
-            if (source == null || source.Count == 0)
-            {
-                yield return null;
-                continue;
-            }
-
-            CardView cardToDraw = source[0];
-            if (cardToDraw == null)
-            {
-                source.RemoveAt(0);
-                remainingCards--;
-                continue;
-            }
-
-            // Activamos la carta que vamos a robar
-            cardToDraw.gameObject.SetActive(true);
-
-            // LÓGICA DE JUEGO INMEDIATA: Añadimos la carta a la mano de datos antes de animar
-            hand.Add(cardToDraw);
-            source.RemoveAt(0);
-
-            remainingCards--;
-            //GameManager.instance.drawTxt.gameObject.GetComponent<TxtManager>().TextChange(source.Count);
-
-            // --- REORGANIZACIÓN TOTAL Y SIMÉTRICA DEL ABANICO ---
-            // Obtenemos cuántas cartas hay en TOTAL en la mano en este milisegundo (viejas + la nueva)
-            int totalCartasEnMano = hand.Count;
-
-            for (int indexMano = 0; indexMano < totalCartasEnMano; indexMano++)
-            {
-                CardView cartaActual = hand[indexMano];
-                if (cartaActual == null) continue;
-
-                RectTransform rectCarta = cartaActual.GetComponent<RectTransform>();
-
-                float posX = 0f;
-                float posY = 0f;
-                float dirZ = 0f;
-
-                if (totalCartasEnMano > 1)
-                {
-                    // La matemática ahora se calcula basándose en la posición real de cada carta dentro de la mano completa (indexMano)
-                    float t = (float)indexMano / (totalCartasEnMano - 1) * 2f - 1f;
-                    float proportionalHandWidth = (totalCartasEnMano - 1) * separationX;
-
-                    posX = t * (proportionalHandWidth / 2f);
-                    posY = (1f - (t * t)) * archHeight;
-                    dirZ = -t * maxRotation;
-                }
-
-                Vector2 targetAnchoredPos = center + new Vector2(posX, posY);
-                Vector3 targetRotation = new Vector3(0f, 0f, dirZ);
-
-                // Animamos de forma asíncrona tanto las cartas viejas para que se abran, 
-                // como la carta nueva para que tome su posición correcta en el abanico.
-                rectCarta.DOAnchorPos(targetAnchoredPos, 0.4f);
-                rectCarta.DOLocalRotate(targetRotation, 0.4f);
-            }
-
-            // Pausa entre el robo de cada carta (reducido a 0.4s para que se sienta dinámico, cámbialo si prefieres 1f)
-            yield return new WaitForSeconds(0.4f);
+            if (view != null)
+                hand.Add(view);
         }
 
-        Debug.Log("Robo finalizado exitosamente.");
+        int count = hand.Count;
+        float direction = opponentHand ? -1f : 1f;
+
+        for (int i = 0; i < count; i++)
+        {
+            RectTransform cardRect =
+                hand[i].GetComponent<RectTransform>();
+
+            if (cardRect == null)
+                continue;
+
+            // Recorre el abanico desde -1 hasta +1.
+            float t = count > 1
+                ? (float)i / (count - 1) * 2f - 1f
+                : 0f;
+
+            // Centra el conjunto alrededor del punto de la mano.
+            float x = (i - (count - 1) * 0.5f) * separationX;
+
+            // Los extremos quedan en la base y el centro se eleva.
+            float y = count > 1
+                ? (1f - t * t) * archHeight
+                : 0f;
+
+            Vector3 targetPosition = new Vector3(
+                center.x + x,
+                center.y + direction * y,
+                0f
+            );
+
+            // La mano rival mira hacia el jugador de arriba.
+            float baseRotation = opponentHand ? 180f : 0f;
+            float angle = baseRotation - direction * t * maxRotation;
+
+            cardRect.DOKill();
+
+            cardRect
+                .DOLocalMove(targetPosition, 0.4f)
+                .SetEase(Ease.OutQuad);
+
+            cardRect
+                .DOLocalRotate(new Vector3(0f, 0f, angle), 0.4f)
+                .SetEase(Ease.OutQuad);
+        }
     }
 }
